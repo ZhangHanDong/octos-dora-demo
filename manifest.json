@@ -1,0 +1,65 @@
+{
+  "name": "feetech-omni-car",
+  "version": "0.3.0",
+  "author": "dorarobotics",
+  "description": "Control a Feetech 3-wheel omni-directional chassis. Supports move, rotate, stop with optional duration.",
+  "timeout_secs": 35,
+  "requires_network": false,
+  "tools": [
+    {
+      "name": "init_motors",
+      "description": "Initialize all three wheel motors: switch to Wheel Mode and enable torque. MUST be called once before any move_base or stop command.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "move_base",
+      "description": "Move the omni-wheel car. vx=forward/backward, vy=left/right lateral, omega=rotation. Values are internal speed ticks, range -1500 to 1500. Conversion: 1 tick ≈ 0.000077 m/s (e.g. 500 ticks ≈ 0.038 m/s, 1000 ticks ≈ 0.076 m/s, 1500 ticks ≈ 0.114 m/s). If duration_secs is provided, the car moves for that many seconds then stops automatically. Call init_motors first.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "vx": {
+            "type": "number",
+            "description": "Forward/backward speed in ticks. Positive = forward, negative = backward. Range: -1500 to 1500. 1 tick ≈ 0.000077 m/s."
+          },
+          "vy": {
+            "type": "number",
+            "description": "Left/right lateral speed in ticks. Positive = left, negative = right. Range: -1500 to 1500. 1 tick ≈ 0.000077 m/s."
+          },
+          "omega": {
+            "type": "number",
+            "description": "Rotation speed in ticks. Positive = counter-clockwise, negative = clockwise. Range: -1500 to 1500. 1 tick ≈ 0.000077 m/s."
+          },
+          "duration_secs": {
+            "type": "number",
+            "description": "Optional. If set, the car moves for this many seconds then stops automatically. Range: 0 to 30. If omitted, the car moves until a separate stop or move_base command is issued."
+          }
+        },
+        "required": ["vx", "vy", "omega"]
+      }
+    },
+    {
+      "name": "stop",
+      "description": "Stop all wheels by commanding zero speed. Use robot_estop instead for safety-critical stops.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "robot_estop",
+      "description": "Emergency stop: immediately zero all wheel speeds and disable servo torque. After estop, init_motors must be called again before moving.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Optional reason string for logging."
+          }
+        }
+      }
+    }
+  ]
+}
