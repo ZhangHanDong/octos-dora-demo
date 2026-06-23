@@ -1,0 +1,15 @@
+# Rust build artifacts
+bridge/target/
+bridge/Cargo.lock
+
+# Compiled binaries
+/omni-car-bridge
+
+# Common build / IDE artifacts
+**/*.rs.bk
+*.pdb
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
