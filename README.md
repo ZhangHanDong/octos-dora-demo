@@ -1,38 +1,57 @@
 # feetech-omni-car
 
 飞特舵机三轮全向底盘 octos skill。通过自然语言指令控制小车运动，无需编写代码。
+二进制协议 plugin（不走 HTTP/dora）：octos 每次工具调用拉起可执行文件 `main <tool>`，
+args JSON 走 stdin，开串口→执行→退出。
+
+**端到端 robrix(Matrix)→octos→真车** 的完整部署见 **[ROBRIX-DEPLOY.md](ROBRIX-DEPLOY.md)**，
+profile 模板见 **[feetech.profile.example.json](feetech.profile.example.json)**。
 
 ## 文件结构
 
 ```
 feetech-omni-car/
-├── SKILL.md          # octos skill 描述（含生命周期钩子）
-├── manifest.json     # 工具清单
-├── omni-car-bridge   # plugin 可执行文件
-├── bridge/           # plugin 源码（Rust）
-└── README.md         # 本文档
+├── SKILL.md                       # octos skill 描述（含 preflight / emergency_shutdown 钩子）
+├── manifest.json                  # 工具清单（"binary":"main"）
+├── bridge/                        # plugin 源码（Rust）；编译产物 omni-car-bridge 未入库（.gitignore）
+├── deploy-to-octos.sh             # 编译 + 按 profile 安装（产物改名为 main）
+├── feetech.profile.example.json   # gateway/serve 用的 Matrix profile 模板
+├── ROBRIX-DEPLOY.md               # robrix→octos→真车 全套部署
+└── README.md                      # 本文档
 ```
 
 ## 硬件要求
 
 - 飞特 STS/SMS 系列串口总线舵机 × 3，ID 分别设为 13、14、15，以 120° 均布
-- USB 转 TTL 串口适配器，默认路径 `/dev/ttyACM0`
+- USB 转 TTL 串口适配器
+  - **Linux**：通常 `/dev/ttyACM0`（skill 默认值）
+  - **macOS**：没有 `/dev/ttyACM0`，是 `/dev/cu.usbmodem<XXXX>`（`ls /dev/cu.usbmodem*` 查），
+    必须用 `OMNI_CAR_PORT` 覆盖
 - 舵机供电 6V~12V（独立于 USB 供电）
 
-## 安装
+## 安装（octos 1.1.0：按 profile）
+
+> octos 1.1.0 起，全局 `<data-dir>/skills/` **不再被扫描**。gateway/serve 按 profile
+> 从 `<data-dir>/profiles/<id>/data/skills/` 加载；`octos chat` 用 `OCTOS_SKILLS_PATH`。
 
 ```bash
-cd ~
-octos skills install /path/to/feetech-omni-car --force
+cd octos-and-skills
+bash deploy-to-octos.sh feetech "$HOME/.octos"
+# 编译 bridge 并装入 ~/.octos/profiles/feetech/data/skills/feetech-omni-car/（二进制名 main）
 ```
 
-## 自然语言控制
+## 自然语言控制（快速 CLI 验证）
+
+`octos chat` 不读 gateway profile，用 `OCTOS_SKILLS_PATH` 指向 skill 父目录：
 
 ```bash
-octos chat -m "让小车原地旋转3秒后停止"
+OCTOS_SKILLS_PATH=~/.octos/profiles/feetech/data/skills \
+OMNI_CAR_PORT=/dev/ttyACM0 \    # macOS: /dev/cu.usbmodem<XXXX>
+  octos chat --provider moonshot --model kimi-k2.5 -v -m "让小车原地旋转3秒后停止"
 ```
 
 octos 会自动依次调用 `init_motors → move_base → stop` 完成整个任务。
+要从 robrix(Matrix) 驱动，见 [ROBRIX-DEPLOY.md](ROBRIX-DEPLOY.md)。
 
 ## 工具参数说明
 
@@ -96,16 +115,22 @@ octos 会自动依次调用 `init_motors → move_base → stop` 完成整个任
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `OMNI_CAR_PORT` | `/dev/ttyACM0` | 串口设备路径 |
+| `OMNI_CAR_PORT` | `/dev/ttyACM0` | 串口设备路径（Linux）。**macOS 用 `/dev/cu.usbmodem<XXXX>`** |
 | `OMNI_CAR_BAUD` | `1000000` | 波特率（通常无需修改） |
 
-## 重新编译 plugin
+gateway/serve 下，把 `OMNI_CAR_PORT` 放进 profile 的 `config.env_vars`（见
+[feetech.profile.example.json](feetech.profile.example.json)），插件子进程会继承。
+
+## 重新编译 / 重新安装 plugin
+
+直接重跑部署脚本（编译 + 装入对应 profile，二进制改名为 `main`）：
 
 ```bash
-cd /home/dora/.octos/skills/skills/feetech-omni-car/bridge
-cargo build --release
-cp target/release/omni-car-bridge ../omni-car-bridge
+bash deploy-to-octos.sh feetech "$HOME/.octos"
 ```
+
+或手动编译：`cd bridge && cargo build --release`，产物在
+`bridge/target/release/omni-car-bridge`（安装时需改名为 `main`）。
 
 ## 注意事项
 

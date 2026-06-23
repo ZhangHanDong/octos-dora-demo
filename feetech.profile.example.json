@@ -1,0 +1,43 @@
+{
+  "_comment": "octos gateway/serve UserProfile for driving the feetech omni-car from Matrix/robrix. Copy to <data-dir>/profiles/feetech.json and fill in the placeholders. This is the kind of profile serve/gateway load (NOT the chat --profile coding/swarm runtime profile). Verified working on macOS 2026-06-23 (robrix -> octos -> real car).",
+
+  "id": "feetech",
+  "name": "Feetech Omni Car",
+  "enabled": true,
+  "created_at": "2025-01-01T00:00:00Z",
+  "updated_at": "2025-01-01T00:00:00Z",
+  "config": {
+    "llm": {
+      "primary": {
+        "family_id": "moonshot",
+        "model_id": "kimi-k2.5",
+        "route": { "api_key_env": "MOONSHOT_API_KEY" }
+      }
+    },
+    "admin_mode": true,
+
+    "env_vars": {
+      "_comment": "Serial device for the car's USB-TTL. Linux: /dev/ttyACM0. macOS: /dev/cu.usbmodem<XXXX> (run `ls /dev/cu.usbmodem*`). The plugin process inherits this.",
+      "OMNI_CAR_PORT": "/dev/ttyACM0"
+    },
+
+    "channels": [
+      {
+        "type": "matrix",
+        "_comment_homeserver": "palpo CS-API reachable FROM the host running octos. With palpo in Docker and octos on the host, use the host port mapping (e.g. http://127.0.0.1:8128) — NOT the docker-internal name http://palpo:8008.",
+        "homeserver": "http://127.0.0.1:8128",
+        "_comment_tokens": "as_token/hs_token MUST match the appservice registration palpo loads (e.g. appservices/octos-registration.yaml). Regenerate for production: openssl rand -hex 32.",
+        "as_token": "<MATCH octos-registration.yaml as_token>",
+        "hs_token": "<MATCH octos-registration.yaml hs_token>",
+        "server_name": "127.0.0.1:8128",
+        "sender_localpart": "octosbot",
+        "user_prefix": "octosbot_",
+        "_comment_port": "octos listens here for appservice pushes from palpo. palpo's registration `url` must reach it (e.g. http://host.docker.internal:8009 when palpo is dockerized and octos on host).",
+        "port": 8009,
+        "allowed_senders": []
+      }
+    ],
+
+    "gateway": { "max_history": 50, "queue_mode": "followup" }
+  }
+}
