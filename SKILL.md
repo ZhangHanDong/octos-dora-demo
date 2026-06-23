@@ -11,25 +11,9 @@ preflight:
     command: bash -c 'test -e "${OMNI_CAR_PORT:-/dev/ttyACM0}"'
     timeout_secs: 5
     critical: true
-init:
-  - label: start omni-car bridge
-    command: /home/dora/.octos/skills/skills/feetech-omni-car/omni-car-bridge
-    timeout_secs: 10
-    critical: true
-ready_check:
-  - label: bridge HTTP responds
-    command: curl -fsS -m 2 http://127.0.0.1:8770/healthz
-    timeout_secs: 3
-    retries: 10
-    critical: true
-shutdown:
-  - label: stop bridge process
-    command: pkill -f omni_car_bridge || true
-    timeout_secs: 5
-    critical: false
 emergency_shutdown:
-  - label: estop via bridge
-    command: curl -fsS -X POST http://127.0.0.1:8770/tools/robot_estop -H "Content-Type: application/json" -d '{"args":{}}'
+  - label: estop via the skill binary
+    command: bash -c 'echo "{}" | ./main robot_estop'
     timeout_secs: 5
     critical: true
 ---
@@ -37,7 +21,9 @@ emergency_shutdown:
 # Feetech Omni-Wheel Car（飞特三轮全向底盘）
 
 三轮全向底盘，三个飞特串口总线舵机（ID 13/14/15）以 120° 均布驱动。
-通过本地 HTTP bridge (`http://127.0.0.1:8770`) 控制，串口由 bridge 进程持有。
+octos 通过二进制协议调用本 skill 的可执行文件（安装后名为 `main`，每次工具调用：
+`./main <tool>` + args-JSON 走 stdin，开串口→执行→退出）；串口路径由
+`OMNI_CAR_PORT`（默认 `/dev/ttyACM0`）指定。
 
 ## 轮子布局
 
@@ -85,7 +71,7 @@ emergency_shutdown:
 | `NOT_INITIALIZED` | 未调用 init_motors | 先调用 init_motors |
 | `MOTOR_ERROR` | 运动指令写入失败 | 检查总线连接，重试 |
 | `INVALID_PARAMS` | 参数格式错误 | 检查 vx/vy/omega 字段 |
-| `BRIDGE_DOWN` | bridge 进程不可达 | operator 重启 bridge |
+| 串口打开失败 | `/dev/ttyACM0` 不存在或无权限 | 检查 `OMNI_CAR_PORT`、上电、串口读写权限（dialout 组） |
 
 ## 安全
 

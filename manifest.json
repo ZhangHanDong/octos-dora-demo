@@ -5,6 +5,7 @@
   "description": "Control a Feetech 3-wheel omni-directional chassis. Supports move, rotate, stop with optional duration.",
   "timeout_secs": 35,
   "requires_network": false,
+  "binary": "main",
   "tools": [
     {
       "name": "init_motors",
