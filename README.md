@@ -4,8 +4,10 @@
 二进制协议 plugin（不走 HTTP/dora）：octos 每次工具调用拉起可执行文件 `main <tool>`，
 args JSON 走 stdin，开串口→执行→退出。
 
-**端到端 robrix(Matrix)→octos→真车** 的完整部署见 **[ROBRIX-DEPLOY.md](ROBRIX-DEPLOY.md)**，
-profile 模板见 **[feetech.profile.example.json](feetech.profile.example.json)**。
+**端到端总览（手机/桌面 robrix → octos → 真车，含 Android/adb reverse、实测踩坑）**
+见 **[END-TO-END-DEMO.md](END-TO-END-DEMO.md)**；Linux 服务端部署见
+**[ROBRIX-DEPLOY.md](ROBRIX-DEPLOY.md)**；profile 模板见
+**[feetech.profile.example.json](feetech.profile.example.json)**。
 
 ## 文件结构
 
